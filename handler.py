@@ -25,6 +25,7 @@ from messagegenerator import (
 logger = logging.getLogger()
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO").upper())
 
+
 class CachedSecrets:
     def __init__(self, client):
         self.client = client
@@ -118,7 +119,7 @@ def send_alert(event_details, affected_accounts, affected_entities, event_type):
         except URLError as e:
             print("Server connection failed: ", e.reason)
             pass
-    #Slack Notification Handling
+    # Slack Notification Handling
     if slack_url != "None":
         for slack_webhook_type in ["services", "triggers", "workflows"]:
             if ("hooks.slack.com/" + slack_webhook_type) in slack_url:
@@ -136,7 +137,11 @@ def send_alert(event_details, affected_accounts, affected_entities, event_type):
                     )
                     break
                 except HTTPError as e:
-                    print("Got an error while sending message to Slack: ", e.code, e.reason)
+                    print(
+                        "Got an error while sending message to Slack: ",
+                        e.code,
+                        e.reason,
+                    )
                 except URLError as e:
                     print("Server connection failed: ", e.reason)
                     pass
@@ -212,7 +217,7 @@ def send_org_alert(
         except URLError as e:
             print("Server connection failed: ", e.reason)
             pass
-    #Slack Notification Handling
+    # Slack Notification Handling
     if slack_url != "None":
         for slack_webhook_type in ["services", "triggers", "workflows"]:
             if ("hooks.slack.com/" + slack_webhook_type) in slack_url:
@@ -230,7 +235,11 @@ def send_org_alert(
                     )
                     break
                 except HTTPError as e:
-                    print("Got an error while sending message to Slack: ", e.code, e.reason)
+                    print(
+                        "Got an error while sending message to Slack: ",
+                        e.code,
+                        e.reason,
+                    )
                 except URLError as e:
                     print("Server connection failed: ", e.reason)
                     pass
@@ -457,6 +466,7 @@ def get_affected_entities(health_client, event_arn, affected_accounts, is_org_mo
 # don't list entities which are accounts (handled separately for chat applications)
 def get_resources_from_entities(affected_entity_array):
     resources = []
+    filter_resolved = os.environ.get("FILTER_RESOLVED", "Yes").lower() == "yes"
 
     for entity in affected_entity_array:
         if entity["entityValue"] == "UNKNOWN":
@@ -465,6 +475,7 @@ def get_resources_from_entities(affected_entity_array):
         elif (
             entity["entityValue"] != "AWS_ACCOUNT"
             and entity["entityValue"] != entity["awsAccountId"]
+            and (not filter_resolved or entity.get("status", "").lower() != "resolved")
         ):
             resources.append(entity["entityValue"])
     return resources
@@ -514,7 +525,7 @@ def update_org_ddb(
                     "ttl": int(sec_now) + delta_hours_sec + 86400,
                     "statusCode": status_code,
                     "affectedAccountIDs": affected_org_accounts,
-                    "latestDescription": event_latestDescription
+                    "latestDescription": event_latestDescription,
                     # Cleanup: DynamoDB entry deleted 24 hours after last update
                 }
             )
@@ -558,7 +569,7 @@ def update_org_ddb(
                         "ttl": int(sec_now) + delta_hours_sec + 86400,
                         "statusCode": status_code,
                         "affectedAccountIDs": affected_org_accounts,
-                        "latestDescription": event_latestDescription
+                        "latestDescription": event_latestDescription,
                         # Cleanup: DynamoDB entry deleted 24 hours after last update
                     }
                 )
@@ -630,7 +641,7 @@ def update_ddb(
                     "ttl": int(sec_now) + delta_hours_sec + 86400,
                     "statusCode": status_code,
                     "affectedAccountIDs": affected_accounts,
-                    "latestDescription": event_latestDescription
+                    "latestDescription": event_latestDescription,
                     # Cleanup: DynamoDB entry deleted 24 hours after last update
                 }
             )
@@ -672,7 +683,7 @@ def update_ddb(
                         "ttl": int(sec_now) + delta_hours_sec + 86400,
                         "statusCode": status_code,
                         "affectedAccountIDs": affected_accounts,
-                        "latestDescription": event_latestDescription
+                        "latestDescription": event_latestDescription,
                         # Cleanup: DynamoDB entry deleted 24 hours after last update
                     }
                 )
